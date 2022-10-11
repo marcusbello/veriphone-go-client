@@ -11,6 +11,7 @@ import (
 )
 
 const BaseURL = "https://api.veriphone.io/v2"
+const ApiKey = "916C4BBDBD044FC0873378A06FDEE51E"
 
 func main() {
 	//repo := newVerifyPhoneRepo(os.Getenv("API"))
@@ -25,9 +26,8 @@ func main() {
 	r.HandleFunc("/verify/{phone}", VerifyHTTPFunction)
 
 	srv := &http.Server{
-		Handler: r,
-		Addr:    "127.0.0.1:8000",
-		// Good practice: enforce timeouts for servers you create!
+		Handler:      r,
+		Addr:         "127.0.0.1:8000",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -38,7 +38,7 @@ func main() {
 func HomeHTTPFunction(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s", r.Method)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"Message":"App running fine"}`)
+	fmt.Fprintf(w, `{"Message":"App running"}`)
 }
 
 func VerifyHTTPFunction(w http.ResponseWriter, r *http.Request) {
@@ -46,10 +46,14 @@ func VerifyHTTPFunction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	phone := vars["phone"]
 	log.Printf("%s", vars["phone"])
-	json.NewEncoder(w).Encode(map[string]string{
-		"Phone":  phone,
-		"Status": "not_valid",
-	})
+
+	repo := newVerifyPhoneRepo(ApiKey)
+	verify, err := repo.validatePhone(context.Background(), phone, "US")
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	json.NewEncoder(w).Encode(verify)
 }
 
 type verifyPhoneRepo struct {
